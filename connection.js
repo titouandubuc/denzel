@@ -28,7 +28,21 @@ app.listen(9292, () => {
     });
 });
 
+app.get("/movies/search",async (request, response) => {
+	var metascore= request.query.metascore;
+	var limit= request.query.limit;
+	if(limit==undefined) limit=5;
+	if(metascore==undefined) metascore=0;
+	var query1 = await {metascore:{$gte:Number(metascore) }};
+	var sample = await {size: Number(limit)};
+	collection.aggregate([{$match: query1 },{$sample: sample} ,{$sort:{"metascore":-1}}]).toArray((error,result)=>{
+		 if(error) {
+            return response.status(500).send(error);
+        }
+        response.send(result);
+	});
 
+});
 
 app.get("/movies/populate", async (request, response) => {
 	const movies= await imdb(DENZEL_IMDB_ID)
@@ -62,12 +76,23 @@ app.get("/movies/:id", (request, response) => {
     });
 });
 
-//Query param pour parametres optionnels
-/*app.get("/movies/search", (request, response) => {
-    collection.find(, (error, result) => {
-        if(error) {
-            return response.status(500).send(error);
-        }
-        response.send(result);
-    }).aggregate({$sample:{size : 5}});
-});*/
+app.post("/movies/:id", (request, response) => {
+	var date = request.body.date;
+	var review= request.body.review;
+	collection.updateOne({"id":request.params.id},{$set:{
+		"date": date,
+		"review": review
+		}
+	},(error, result) => {
+	  if(error) {
+		return response.status(500).send(error);
+	}
+	response.send(result);
+});
+});
+   
+
+
+
+
+
